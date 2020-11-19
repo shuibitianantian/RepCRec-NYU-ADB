@@ -1,0 +1,3 @@
+
+class WaitFor(object):
+    pass
