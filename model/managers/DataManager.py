@@ -59,5 +59,8 @@ class DataManager(object):
     def get_variable(self, idx):
         return self.data[idx - 1]
 
+    def set_variable(self, idx, val):
+        self.data[idx - 1] = val
+    
     def check_accessibility(self, idx):
         return self.is_accessible[idx - 1]

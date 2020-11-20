@@ -80,6 +80,23 @@ class LockManager(object):
         # we need to make sure this is true, if there is a bug, this will work
         assert unlock_counts == 1
 
+    def release_transaction_locks(self, trans_id):
+        """
+        Iterate lock on each variable, if the lock is set by given trans_id, release it
+        :param trans_id:
+        :return: None
+        """
+        for var_id, locks in self.lock_table.items():
+            # release read lock
+            read_locks = locks[0]
+            if trans_id in read_locks:
+                read_locks.remove(trans_id)
+
+            # release write lock
+            write_locks = locks[1]
+            if write_locks == trans_id:
+                self.lock_table[var_id][1] = None
+
     def clear(self):
         """
         Clear the lock table, when site fail, we should clear locks

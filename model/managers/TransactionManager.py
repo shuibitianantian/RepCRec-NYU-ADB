@@ -7,28 +7,33 @@ class TransactionManager(object):
         self.wait_for_graph = WaitFor()
 
         # store all blocked transaction and its operations
-        self.blocked = set()
+        self.blocked = []
 
         # store Site object to these
         self.sites = []
 
-    def retry(self):
+    def retry(self, tick):
         """
-        TODO:
-        :return:
+        retry blocked operations
+        :return: None
         """
-        pass
+        self.blocked = [op for op in self.blocked if not op.execute(tick, self)]
 
     def _distribute_operation(self, operation, tick):
-        operation.execute(tick, self)
+        succeed = operation.execute(tick, self)
+        if not succeed:
+            self.blocked.append(operation)
 
     def step(self, operation, tick):
         # 2 Steps:
         #   First, retry blocked transactions ans distribute it if possible
         #   Second, distribute the new operation
-        self.retry()
+        self.retry(tick)
         self._distribute_operation(operation, tick)
 
     def attach_sites(self, sites):
         self.sites = sites
+
+    def get_site(self, idx):
+        return self.sites[idx - 1]
 

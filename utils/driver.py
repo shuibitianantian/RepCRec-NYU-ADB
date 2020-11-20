@@ -21,10 +21,13 @@ def run(case):
     tm = TransactionManager()
     tm.attach_sites(init_sites())
 
-    for tick, op in enumerate(case):
+    tick = 0
+    for op in case:
+        tick += 1
         op_t, para = OperationParser.parse(op)
         operation = OperationCreator.create(op_t, para)
         tm.step(operation, tick)
 
     while tm.blocked:
-        tm.retry()
+        tick += 1
+        tm.retry(tick)
