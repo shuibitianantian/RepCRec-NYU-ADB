@@ -7,6 +7,11 @@ class Transaction(object):
         self.tick = tick
 
     def add_operation(self, operation):
+        """
+        Add given operation to the transactions
+        :param operation: an operation
+        :return: None
+        """
         self.operations.append(operation)
 
     def __str__(self):

@@ -12,7 +12,10 @@ class FileLoader(object):
         self._buffer_idx = -1
 
     def next_case(self):
-
+        """
+        Gather all operations of next test case
+        :return: list of operations
+        """
         operations = []
         for idx, line in enumerate(self._lines[self._buffer_idx + 1:]):
             self._buffer_idx += 1
@@ -24,5 +27,9 @@ class FileLoader(object):
         return operations
 
     def has_next(self):
+        """
+        Check if there are remaining test cases
+        :return: True or False
+        """
         return self._buffer_idx < self._end_idx
 

@@ -16,6 +16,13 @@ class LockManager(object):
         self.lock_table = {}
 
     def try_lock_variable(self, transaction_id, variable_id, lock_type):
+        """
+        TODO: Testing needed, cannot guarantee no bug in current code
+        :param transaction_id:
+        :param variable_id:
+        :param lock_type:
+        :return: if lock variable succeed or not
+        """
         # Make sure given lock type is 0 or 1
         if lock_type != 0 and lock_type != 1:
             raise ValueError(f"Unknown lock type: {lock_type}")
@@ -55,6 +62,12 @@ class LockManager(object):
                     return False
 
     def try_unlock_variable(self, variable_id, transaction_id):
+        """
+        TODO: Testing needed, cannot guarantee no bug in current code
+        :param variable_id:
+        :param transaction_id:
+        :return: if unlock variable succeed or not
+        """
         lock = self.lock_table.get(variable_id, None)
 
         if lock is None:
@@ -75,5 +88,9 @@ class LockManager(object):
         assert unlock_counts == 1
 
     def clear(self):
+        """
+        Clear the lock table, when site fail, we should clear locks
+        :return: None
+        """
         self.lock_table = {}
 

@@ -9,7 +9,15 @@ class Site(object):
         self.up = True
 
     def fail(self):
+        """
+        TODO: Change site status to down
+        :return: None
+        """
         self.up = False
 
     def recover(self):
+        """
+        TODO: Change site status to up
+        :return: None
+        """
         self.up = True

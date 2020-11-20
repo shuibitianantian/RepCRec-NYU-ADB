@@ -13,6 +13,10 @@ class TransactionManager(object):
         self.sites = []
 
     def retry(self):
+        """
+        TODO:
+        :return:
+        """
         pass
 
     def _distribute_operation(self, operation, tick):
