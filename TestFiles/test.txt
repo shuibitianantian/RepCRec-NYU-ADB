@@ -5,6 +5,7 @@ W(T2,x2,202)
 W(T1,x2,102)
 W(T2,x1,201)
 end(T1)
+end(T2)
 dump()
 
 <END>

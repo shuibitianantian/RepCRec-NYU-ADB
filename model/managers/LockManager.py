@@ -1,14 +1,4 @@
 
-class Lock(object):
-    def __init__(self, transaction_id, lock_type=0):
-        self.type = lock_type
-        self.transaction_id = transaction_id
-
-    def promote(self, ):
-        if self.type == 0:
-            self.type = 1
-
-
 class LockManager(object):
     # 0 represents share lock, 1 represent exclusive lock
     # variable: {0: set(transaction_id), 1: transaction_id}
@@ -51,12 +41,15 @@ class LockManager(object):
             elif lock_type == 0 and self.lock_table[variable_id][1] is not None:
                 return False
 
-            # Situation 3: Exclusive lock, any existing lock will conflict with it
+            # Situation 3: Exclusive lock, any existing lock of different transaction will conflict with it
             elif lock_type == 1:
                 # Situation 3.1: given transaction has a shared lock on given variable id (promote lock)
                 if transaction_id in self.lock_table[variable_id][0] and len(self.lock_table[variable_id][0]) == 1:
                     self.lock_table[variable_id][0].remove(transaction_id)
                     self.lock_table[variable_id][1] = transaction_id
+                    return True
+                # Situation 3.2: given transaction has an exclusive lock on given variable id, just return True
+                elif transaction_id == self.lock_table[variable_id][1]:
                     return True
                 else:
                     return False

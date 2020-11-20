@@ -3,8 +3,24 @@ from utils.FileLoader import FileLoader
 from model.Transaction import Transaction
 from configurations import distinct_variable_counts
 from prettytable import PrettyTable
+from configurations import *
 
 TABLE_HEADERS = ["Site Name"] + [f"x{i}" for i in range(1, distinct_variable_counts + 1)]
+
+
+# split variable id like "x12" to "x" and "12"
+def parse_variable_id(variable_id):
+    for idx, c in enumerate(variable_id):
+        if c.isdigit():
+            return variable_id[:idx], int(variable_id[idx:])
+
+
+def print_result(headers, rows):
+    table = PrettyTable()
+    table.field_names = headers
+    for row in rows:
+        table.add_row(row)
+    print(table)
 
 
 class OperationParser(object):
@@ -74,12 +90,66 @@ class Read(Operation):
 
     def execute(self, tick: int, tm):
         """
-        TODO: add logic here
+        TODO: Need bugfix
         :param tick: time
         :param tm: Transaction Manager
         :return:
         """
         self.save_to_transaction(tm)
+        trans_id, var_id_str = self.para[0], self.para[1]
+        _, var_id = parse_variable_id(var_id_str)
+        # Case 1: read_only transaction
+        if tm.transactions[trans_id].is_readonly:
+            trans_start_tick = tm.transactions[trans_id].tick
+            # Situation 1.1: if the index of variable read is odd, then we just need to check specific site
+            if var_id % 2 != 0:
+                site = tm.sites[var_id % number_of_sites]
+                if not site.up:
+                    return False
+                else:
+                    headers = ["Transaction", "Site", var_id_str]
+                    # Only one row here
+                    rows = [[trans_id, f"{site.site_id}", f"{site.get_snapshot_variable(trans_start_tick, var_id)}"]]
+                    print_result(headers, rows)
+                    return True
+            # Situation 1.2: if the index of variable read is even, we just check the first available site to read
+            else:
+                for site in tm.sites:
+                    if not site.up:
+                        continue
+                    else:
+                        headers = ["Transaction", "Site", var_id_str]
+                        # Only one row here
+                        rows = [[trans_id, f"{site.site_id}", f"{site.get_snapshot_variable(trans_start_tick, var_id)}"]]
+                        print_result(headers, rows)
+                        return True
+        # Case 2: typical transaction and the index of variable read is odd, then we just need to check specific site
+        elif var_id % 2 != 0:
+            site = tm.sites[var_id % number_of_sites]
+            if not site.up:
+                return False
+            elif site.data_manager.check_accessibility(var_id):
+                succeed = site.lock_manager.try_lock_variable(trans_id, var_id, 0)
+                if succeed:
+                    print_result(["Transaction", "Site", var_id_str],
+                                 [[trans_id, f"{site.site_id}", f"{site.data_manager.get_variable(var_id)}"]])
+                    return True
+                else:
+                    return False
+        # Case 3: typical transaction and the index of variable read is even,
+        # we just check the first available site to read
+        else:
+            for site in tm.sites:
+                if not site.up:
+                    continue
+                elif site.data_manager.check_accessibility(var_id):
+                    succeed = site.lock_manager.try_lock_variable(trans_id, var_id, 0)
+                    if succeed:
+                        print_result(["Transaction", "Site", var_id_str],
+                                     [[trans_id, f"{site.site_id}", f"{site.data_manager.get_variable(var_id)}"]])
+                        return True
+
+        return False
 
 
 class Write(Operation):
@@ -158,7 +228,7 @@ class BeginRO(Operation):
         Initialize a readonly transaction in Transaction Manager
         :param tick: time
         :param tm: Transaction Manager
-        :return:
+        :return: None
         """
         trans = Transaction(self.para[0], tick, True)
 
@@ -166,6 +236,11 @@ class BeginRO(Operation):
             raise KeyError(f"Dupilcated transaction {trans.transaction_id}")
         else:
             tm.transactions[trans.transaction_id] = trans
+            # take snapshot for each site at current tick
+            for site in tm.sites:
+                # only take snapshot when site is up
+                if site.up:
+                    site.snapshot(tick)
 
 
 class End(Operation):
@@ -210,8 +285,3 @@ if __name__ == "__main__":
     for op in case1:
         op_t, para = OperationParser.parse(op)
         print(OperationCreator.create(op_t, para))
-
-
-
-
-
