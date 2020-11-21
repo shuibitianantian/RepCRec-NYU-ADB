@@ -17,15 +17,24 @@ class Site(object):
 
     def fail(self):
         """
-        TODO: Change site status to down
+        Change site status to false and clear all uncommitted changes in this site
         :return: None
         """
         self.up = False
         self.data_manager.clear_uncommitted_changes()
+        self.lock_manager.clear()
+
+    def echo(self):
+        """
+        return a list of variable values
+        :return: all variable values to prettyTable (which will be printed in dump operation)
+        """
+        prefix = f"Site {self.site_id} ({'up' if self.up else 'down'})"
+        return [prefix] + [v for v in self.data_manager.data]
 
     def recover(self):
         """
-        TODO: Change site status to up
+        Change site status to true, and disable all read accessibility of replicated variable
         :return: None
         """
         self.up = True
@@ -40,4 +49,10 @@ class Site(object):
         self.snapshots[tick] = deepcopy(self.data_manager.data)
 
     def get_snapshot_variable(self, tick, var_id):
+        """
+        query variable data from snapshot of given tick
+        :param tick: time
+        :param var_id: variable id
+        :return: variable value
+        """
         return self.snapshots[tick][var_id - 1]

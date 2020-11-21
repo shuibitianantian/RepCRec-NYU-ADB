@@ -27,27 +27,32 @@ class DataManager(object):
         # self.log is a key-value pair, each pair contains the transaction id and its change
         self.log = {}
 
-    def echo(self):
-        """
-        return a list of variable values
-        :return: all variable values to prettyTable (which will be printed in dump operation)
-        """
-        prefix = f"Site {self.site_id}"
-        return [prefix] + [v for v in self.data]
+    # def echo(self):
+    #     """
+    #     return a list of variable values
+    #     :return: all variable values to prettyTable (which will be printed in dump operation)
+    #     """
+    #     prefix = f"Site {self.site_id}"
+    #     return [prefix] + [v for v in self.data]
 
     def clear_uncommitted_changes(self):
         self.log = {}
 
-    def commit(self):
-        self.data.update(self.log)
-        self.log = {}
+    def commit(self, transaction_id):
+        """
+        Commit changes and clear log.
+        Note: Currently this function is not used, the logic is coded in End operation
+        :return: None
+        """
+        self.data.update(self.log[transaction_id])
+        self.log[transaction_id] = {}
 
     # Change accessible flag after recover, which means the variable only hosted by current site can be write and read
     # any other variable can be write but can not be read before any commit, remember to change the flag when any write
     # operation is committed in this site after recovery
     def disable_accessibility(self):
         """
-        Change accessible flag
+        Change all read accessible flag of non replicated variable to False
         :return: None
         """
         for i in range(1, distinct_variable_counts + 1):
@@ -56,9 +61,12 @@ class DataManager(object):
             else:
                 self.is_accessible[i - 1] = False
 
-    # Revert changes if transaction is going to be aborted
     def revert_transaction_changes(self, transaction_id):
-
+        """
+        Revert changes if transaction is going to be aborted
+        :param transaction_id:
+        :return: None
+        """
         self.log.pop(transaction_id, None)
 
     def get_variable(self, idx):

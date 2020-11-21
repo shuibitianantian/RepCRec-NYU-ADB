@@ -9,7 +9,7 @@ class Operation(object):
     def __str__(self):
         return f"{self.op_t}({','.join(self.para)})"
 
-    def execute(self, tick: int, tm):
+    def execute(self, tick: int, tm, retry=False):
         pass
 
     def save_to_transaction(self, tm):

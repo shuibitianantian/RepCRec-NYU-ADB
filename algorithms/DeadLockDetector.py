@@ -67,8 +67,6 @@ class WaitFor(object):
         return False
 
     def check_deadlock(self):
-        # print(self.wait_for)
-        # print(self.var_to_ops)
         nodes = list(self.wait_for.keys())
         self.trace = []
 

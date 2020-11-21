@@ -1,6 +1,5 @@
 import re
 from . import Operation, print_result, parse_variable_id, do_read
-from utils.FileLoader import FileLoader
 from model.Transaction import Transaction
 from configurations import *
 
@@ -26,7 +25,7 @@ class Begin(Operation):
         super().__init__(para)
         Operation.__setattr__(self, "op_t", "begin")
 
-    def execute(self, tick, tm):
+    def execute(self, tick, tm, retry=False):
         """
         Execute an operation, for Begin, we just need to initialize a new transaction in Transaction Manager
         :param tick: time
@@ -46,7 +45,7 @@ class BeginRO(Operation):
         super().__init__(para)
         Operation.__setattr__(self, "op_t", "beginRO")
 
-    def execute(self, tick, tm):
+    def execute(self, tick, tm, retry=False):
         """
         Initialize a readonly transaction in Transaction Manager
         :param tick: time
@@ -73,14 +72,14 @@ class Read(Operation):
         super().__init__(para)
         Operation.__setattr__(self, "op_t", "R")
 
-    def execute(self, tick: int, tm):
+    def execute(self, tick: int, tm, retry=False):
         """
-        TODO: Need bugfix
         :param tick: time
         :param tm: Transaction Manager
-        :return:
+        :return: None
         """
-        self.save_to_transaction(tm)
+        if not retry:
+            self.save_to_transaction(tm)
 
         trans_id, var_id_str = self.para[0], self.para[1]
         _, var_id = parse_variable_id(var_id_str)
@@ -136,14 +135,15 @@ class Write(Operation):
         super().__init__(para)
         Operation.__setattr__(self, "op_t", "W")
 
-    def execute(self, tick: int, tm):
+    def execute(self, tick: int, tm, retry=False):
         """
-        TODO: Add logic here
         :param tick: time
         :param tm: Transaction Manager
-        :return:
+        :return: None
         """
-        self.save_to_transaction(tm)
+        if not retry:
+            self.save_to_transaction(tm)
+
         trans_id, var_id_str, write_value = self.para[0], self.para[1], self.para[2]
         _, var_id = parse_variable_id(var_id_str)
 
@@ -152,7 +152,7 @@ class Write(Operation):
             site = tm.get_site(var_id % number_of_sites + 1)
 
             if not site.up:
-                print("Site is down, can not get the variable")
+                print(f"Site {site.site_id} is down, {self}")
                 return False
             elif site.lock_manager.try_lock_variable(trans_id, var_id_str, 1):
                 logs = site.data_manager.log.get(trans_id, {})
@@ -160,7 +160,7 @@ class Write(Operation):
                 site.data_manager.log[trans_id] = logs
                 return True
             else:
-                print(f"Site is up, but can not get the lock, {self}")
+                print(f"Site {site.site_id} is up, but can not get the lock, {self}")
                 return False
         # Case 2: variable id is even, need to get locks of all available sites
         else:
@@ -181,6 +181,7 @@ class Write(Operation):
                     return False
 
             if len(locked_sites) == 0:
+                print("No site available now, retry later")
                 return False
 
             # At this point, we can guarantee that program has got all necessary locks for the write operation
@@ -198,14 +199,14 @@ class Dump(Operation):
         super().__init__(para)
         Operation.__setattr__(self, "op_t", "dump")
 
-    def execute(self, tick: int, tm):
+    def execute(self, tick: int, tm, retry=False):
         """
         Print out all variables of each site
         :param tick: time
         :param tm: Transaction Manager
         :return: None
         """
-        rows = [site.data_manager.echo() for site in tm.sites]
+        rows = [site.echo() for site in tm.sites]
         print_result(TABLE_HEADERS, rows)
         return True
 
@@ -215,7 +216,7 @@ class Fail(Operation):
         super().__init__(para)
         Operation.__setattr__(self, "op_t", "fail")
 
-    def execute(self, tick: int, tm):
+    def execute(self, tick: int, tm, retry=False):
         """
         Convert specific site to fail
         :param tick: time
@@ -229,6 +230,7 @@ class Fail(Operation):
 
         transactions = site.lock_manager.get_involved_transactions()
 
+        # Flag transaction to be aborted when commit
         for trans_id in transactions:
             tm.transactions[trans_id].to_be_aborted = True
         return True
@@ -239,7 +241,7 @@ class Recover(Operation):
         super().__init__(para)
         Operation.__setattr__(self, "op_t", "recover")
 
-    def execute(self, tick: int, tm):
+    def execute(self, tick: int, tm, retry=False):
         """
         Convert specific site to up
         :param tick: time
@@ -256,9 +258,8 @@ class End(Operation):
         super().__init__(para)
         Operation.__setattr__(self, "op_t", "end")
 
-    def execute(self, tick: int, tm):
+    def execute(self, tick: int, tm, retry=False):
         """
-        TODO: Commit transaction
         :param tick: time
         :param tm: Transaction Manager
         :return: None
@@ -309,13 +310,3 @@ class OperationCreator(object):
         if op_t not in OperationCreator.types:
             raise KeyError("Unknown Operation Type")
         return OperationCreator.types[op_t](para)
-
-
-# Following code is for test
-# if __name__ == "__main__":
-#     loader = FileLoader("../TestFiles/test.txt")
-#     case1 = loader.next_case()
-#
-#     for op in case1:
-#         op_t, para = OperationParser.parse(op)
-#         print(OperationCreator.create(op_t, para))

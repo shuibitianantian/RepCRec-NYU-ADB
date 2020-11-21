@@ -17,7 +17,7 @@ class TransactionManager(object):
         retry blocked operations
         :return: None
         """
-        self.blocked = [op for op in self.blocked if not op.execute(tick, self)]
+        self.blocked = [op for op in self.blocked if not op.execute(tick, self, True)]
 
     def _distribute_operation(self, operation, tick):
         succeed = operation.execute(tick, self)
