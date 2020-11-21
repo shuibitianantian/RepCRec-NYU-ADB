@@ -26,6 +26,13 @@ class Operation(object):
             raise KeyError(f"Try to execute {self.op_t} in a non-existing transaction")
 
         tm.transactions[transaction_id].add_operation(self)
+        tm.wait_for_graph.add_operation(self)
+
+    def get_parameters(self):
+        return self.para
+
+    def get_op_t(self):
+        return self.op_t
 
 
 # split variable id like "x12" to "x" and "12"
@@ -41,3 +48,16 @@ def print_result(headers, rows):
     for row in rows:
         table.add_row(row)
     print(table)
+
+
+# Read variable from log if modified by transaction,
+# otherwise read from committed data
+def do_read(trans_id, var_id, site):
+    if trans_id in site.data_manager.log and var_id in site.data_manager.log[trans_id]:
+        res = site.data_manager.log[trans_id][var_id]
+    else:
+        res = site.data_manager.get_variable(var_id)
+
+    print_result(["Transaction", "Site", f"x{var_id}"], [[trans_id, f"{site.site_id}", res]])
+
+    return True

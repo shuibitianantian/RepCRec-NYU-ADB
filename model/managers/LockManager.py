@@ -86,6 +86,7 @@ class LockManager(object):
         :param trans_id:
         :return: None
         """
+        to_be_delete = []
         for var_id, locks in self.lock_table.items():
             # release read lock
             read_locks = locks[0]
@@ -93,9 +94,15 @@ class LockManager(object):
                 read_locks.remove(trans_id)
 
             # release write lock
-            write_locks = locks[1]
-            if write_locks == trans_id:
+            write_lock = locks[1]
+            if write_lock == trans_id:
                 self.lock_table[var_id][1] = None
+
+            if len(locks[0]) == 0 and locks[1] is None:
+                to_be_delete.append(var_id)
+
+        for var_id in to_be_delete:
+            self.lock_table.pop(var_id)
 
     def clear(self):
         """
@@ -104,3 +111,14 @@ class LockManager(object):
         """
         self.lock_table = {}
 
+    # Get all the transactions that have one or more locks in this site
+    def get_involved_transactions(self):
+        transactions = set()
+        for var_id, locks in self.lock_table.items():
+            # Transaction has read lock on var_id
+            for t_id in locks[0]:
+                transactions.add(t_id)
+            # Transaction has exclusive lock on var id:
+            if locks[1]:
+                transactions.add(locks[1])
+        return transactions

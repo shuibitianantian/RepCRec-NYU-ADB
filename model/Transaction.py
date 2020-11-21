@@ -4,6 +4,7 @@ class Transaction(object):
         self.transaction_id = identifier
         self.is_readonly = is_readonly
         self.operations = []
+        self.to_be_aborted = False
         self.tick = tick
 
     def add_operation(self, operation):

@@ -56,6 +56,11 @@ class DataManager(object):
             else:
                 self.is_accessible[i - 1] = False
 
+    # Revert changes if transaction is going to be aborted
+    def revert_transaction_changes(self, transaction_id):
+
+        self.log.pop(transaction_id, None)
+
     def get_variable(self, idx):
         return self.data[idx - 1]
 

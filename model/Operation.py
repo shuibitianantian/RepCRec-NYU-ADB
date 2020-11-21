@@ -1,5 +1,5 @@
 import re
-from . import Operation, print_result, parse_variable_id
+from . import Operation, print_result, parse_variable_id, do_read
 from utils.FileLoader import FileLoader
 from model.Transaction import Transaction
 from configurations import *
@@ -81,6 +81,7 @@ class Read(Operation):
         :return:
         """
         self.save_to_transaction(tm)
+
         trans_id, var_id_str = self.para[0], self.para[1]
         _, var_id = parse_variable_id(var_id_str)
         # Case 1: read_only transaction
@@ -114,11 +115,8 @@ class Read(Operation):
             if not site.up:
                 return False
             elif site.data_manager.check_accessibility(var_id):
-                succeed = site.lock_manager.try_lock_variable(trans_id, var_id, 0)
-                if succeed:
-                    print_result(["Transaction", "Site", var_id_str],
-                                 [[trans_id, f"{site.site_id}", f"{site.data_manager.get_variable(var_id)}"]])
-                    return True
+                if site.lock_manager.try_lock_variable(trans_id, var_id, 0):
+                    return do_read(trans_id, var_id, site)
                 else:
                     return False
         # Case 3: typical transaction and the index of variable read is even,
@@ -128,11 +126,8 @@ class Read(Operation):
                 if not site.up:
                     continue
                 elif site.data_manager.check_accessibility(var_id):
-                    succeed = site.lock_manager.try_lock_variable(trans_id, var_id, 0)
-                    if succeed:
-                        print_result(["Transaction", "Site", var_id_str],
-                                     [[trans_id, f"{site.site_id}", f"{site.data_manager.get_variable(var_id)}"]])
-                        return True
+                    if site.lock_manager.try_lock_variable(trans_id, var_id, 0):
+                        return do_read(trans_id, var_id, site)
         return False
 
 
@@ -165,7 +160,7 @@ class Write(Operation):
                 site.data_manager.log[trans_id] = logs
                 return True
             else:
-                print("Site is up, but can not get the lock")
+                print(f"Site is up, but can not get the lock, {self}")
                 return False
         # Case 2: variable id is even, need to get locks of all available sites
         else:
@@ -182,7 +177,7 @@ class Write(Operation):
                 else:
                     for locked_site in locked_sites:
                         locked_site.try_unlock_variable(var_id_str, trans_id)
-                    print("Can not get all exclusive locks for a site-wide variable")
+                    print(f"Can not get all exclusive locks for a site-wide variable, {self}")
                     return False
 
             if len(locked_sites) == 0:
@@ -228,7 +223,14 @@ class Fail(Operation):
         :return:
         """
         site_id = int(self.para[0])
-        tm.get_site(site_id).fail()
+        site = tm.get_site(site_id)
+
+        site.fail()
+
+        transactions = site.lock_manager.get_involved_transactions()
+
+        for trans_id in transactions:
+            tm.transactions[trans_id].to_be_aborted = True
         return True
 
 
@@ -262,6 +264,14 @@ class End(Operation):
         :return: None
         """
         self.save_to_transaction(tm)
+
+        # If a transaction T accesses an item (really accesses it, not just request
+        # a lock) at a site and the site then fails, then T should continue to execute
+        # and then abort only at its commit time (unless T is aborted earlier due to
+        # deadlock).
+        if tm.transactions[self.para[0]].to_be_aborted:
+            tm.abort(self.para[0], 1)
+            return True
 
         # commit all changes made by given transaction
         trans_id = self.para[0]
