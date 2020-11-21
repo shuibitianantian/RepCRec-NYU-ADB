@@ -114,7 +114,7 @@ class Read(Operation):
             if not site.up:
                 return False
             elif site.data_manager.check_accessibility(var_id):
-                if site.lock_manager.try_lock_variable(trans_id, var_id, 0):
+                if site.lock_manager.try_lock_variable(trans_id, var_id_str, 0):
                     return do_read(trans_id, var_id, site)
                 else:
                     return False
@@ -125,7 +125,7 @@ class Read(Operation):
                 if not site.up:
                     continue
                 elif site.data_manager.check_accessibility(var_id):
-                    if site.lock_manager.try_lock_variable(trans_id, var_id, 0):
+                    if site.lock_manager.try_lock_variable(trans_id, var_id_str, 0):
                         return do_read(trans_id, var_id, site)
         return False
 
@@ -152,7 +152,7 @@ class Write(Operation):
             site = tm.get_site(var_id % number_of_sites + 1)
 
             if not site.up:
-                print(f"Site {site.site_id} is down, {self}")
+                # print(f"Site {site.site_id} is down, {self}")
                 return False
             elif site.lock_manager.try_lock_variable(trans_id, var_id_str, 1):
                 logs = site.data_manager.log.get(trans_id, {})
@@ -160,7 +160,7 @@ class Write(Operation):
                 site.data_manager.log[trans_id] = logs
                 return True
             else:
-                print(f"Site {site.site_id} is up, but can not get the lock, {self}")
+                # print(f"Site {site.site_id} is up, but can not get the lock, {self}")
                 return False
         # Case 2: variable id is even, need to get locks of all available sites
         else:
@@ -177,11 +177,11 @@ class Write(Operation):
                 else:
                     for locked_site in locked_sites:
                         locked_site.try_unlock_variable(var_id_str, trans_id)
-                    print(f"Can not get all exclusive locks for a site-wide variable, {self}")
+                    # print(f"Can not get all exclusive locks for a site-wide variable, {self}")
                     return False
 
             if len(locked_sites) == 0:
-                print("No site available now, retry later")
+                # print("No site available now, retry later")
                 return False
 
             # At this point, we can guarantee that program has got all necessary locks for the write operation
@@ -225,14 +225,12 @@ class Fail(Operation):
         """
         site_id = int(self.para[0])
         site = tm.get_site(site_id)
-
-        site.fail()
-
         transactions = site.lock_manager.get_involved_transactions()
 
         # Flag transaction to be aborted when commit
         for trans_id in transactions:
             tm.transactions[trans_id].to_be_aborted = True
+        site.fail()
         return True
 
 

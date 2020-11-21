@@ -1,0 +1,404 @@
+// Test 1.
+// T2 should abort, T1 should not, because of kill youngest
+
+begin(T1)
+begin(T2)
+W(T1,x1,101) 
+W(T2,x2,202)
+W(T1,x2,102) 
+W(T2,x1,201)
+end(T1)
+dump()
+
+=== output of dump
+x1: 101 at site 2
+x2: 102 at all sites
+All other variables have their initial values.
+
+// Test 2
+// No aborts happens, since read-only transactions use
+// multiversion read protocol.
+
+begin(T1)
+beginRO(T2)
+W(T1,x1,101) 
+R(T2,x2)
+W(T1,x2,102) 
+R(T2,x1)
+end(T1) 
+end(T2)
+dump()
+
+=== output of dump
+x1: 101 at site 2
+x2: 102 at all sites
+All other variables have their initial values.
+
+// Test 3
+// T1 should not abort because its site did not fail.
+// In fact all transactions commit
+// x8 has the value 88 at every site except site 2 where it won't have
+// the correct value right away but must wait for a write to take place.
+begin(T1)
+begin(T2)
+R(T1,x3)
+fail(2)
+W(T2,x8,88) 
+R(T2,x3)
+W(T1, x5,91)
+end(T2)
+recover(2)
+end(T1)
+
+// Test 3.5
+// T1 should not abort because site 4 did not fail.
+// However T1 will write to x4 on every site except site 2.
+// Site 2 should not be able to respond to read requests for any
+// replicated variable after it recovers until a write is committed to it.
+// T1's write will not go to site 2, so every site except site 2
+// will have x4 equal to 91
+// x8 will not value 88 because T2 aborts
+// the correct value right away but must wait for a write to take place.
+// So W(T2,x8,88)
+// will not commit and is lost on failure.
+// Even though site 2 recovers before T2, T2 will not retroactively
+// write to the site (in any practical version of available copies).
+// T2 aborts because it wrote to x8.
+begin(T1)
+begin(T2)
+R(T1,x3)
+W(T2,x8,88) 
+fail(2)
+R(T2,x3)
+W(T1, x4,91)
+recover(2)
+end(T2)
+end(T1)
+
+// Test 3.7
+// T1 should not abort because site 4 did not fail.
+// In this case, T1 will write to x4 on every site. 
+// x8 will not value 88 because T2 aborts
+// the correct value right away but must wait for a write to take place.
+// So W(T2,x8,88)
+// will not commit and is lost on failure.
+// Even though site 2 recovers before T2, T2 will not retroactively
+// write to the site (in any practical version of available copies).
+// T2 aborts because it wrote to x8.
+begin(T1)
+begin(T2)
+R(T1,x3)
+W(T2,x8,88) 
+fail(2)
+R(T2,x3)
+recover(2)
+W(T1, x4,91)
+end(T2)
+end(T1)
+
+// Test 4
+// Now T1 aborts, since site 2 died after T1 accessed it. T2 ok.
+// Normally, we wait till the end(T1) to abort T1.
+// However, it is ok to abort T1 right away when fail(2) happens. Both
+// are correct.
+begin(T1)
+begin(T2)
+R(T1,x1)
+fail(2)
+W(T2,x8,88)
+R(T2,x3)
+R(T1, x5)
+end(T2)
+recover(2)
+end(T1)
+
+// Test 5
+// T1 fails again here because it wrote to a site that failed. T2 ok.
+begin(T1)
+begin(T2)
+W(T1,x6,66)
+fail(2)
+W(T2,x8,88) 
+R(T2,x3)
+R(T1, x5)
+end(T2)
+recover(2)
+end(T1)
+
+
+// Test 6
+// T1 ok. T2 ok. T2 reads from a recovering site, but odd variables only
+// at that site
+// At the dump, sites 3 and 4 would have their original values for x8.
+// Future reads of x8 to those sites should be refused until a committed write
+// takes place.
+begin(T1)
+begin(T2)
+fail(3) 
+fail(4)
+R(T1,x1)
+W(T2,x8,88)
+end(T1)
+recover(4) 
+recover(3)
+R(T2,x3)
+end(T2)
+dump()
+
+
+
+// Test 7
+// T2 should read the initial version of x3 based on multiversion read
+// consistency.
+begin(T1)
+beginRO(T2)
+R(T2,x1)
+R(T2,x2)
+W(T1,x3,33)
+end(T1)
+R(T2,x3)
+end(T2)
+
+// Test 8
+// T2 still reads the initial value of x3
+// T3 still reads the value of x3 written by T1
+begin(T1)
+beginRO(T2)
+R(T2,x1)
+R(T2,x2)
+W(T1,x3,33)
+end(T1)
+beginRO(T3)
+R(T3,x3)
+R(T2,x3)
+end(T2)
+end(T3)
+
+// Test 9
+// T1, T2, T3 ok. T3 waits and then comlete after T2 commits 
+begin(T3)
+begin(T1)
+begin(T2)
+W(T3,x2,22)
+W(T2,x4,44)
+R(T3,x4)
+end(T2)
+end(T3)
+R(T1,x2)
+end(T1)
+
+// Test 10
+// T3 should wait and should not abort
+begin(T1)
+begin(T2)
+begin(T3)
+W(T3,x2,22)
+W(T2,x4,44)
+R(T3,x4)
+end(T2)
+end(T3)
+R(T1,x2)
+end(T1)
+
+
+// Test 11
+// All should commit
+begin(T1)
+begin(T2)
+R(T1,x2)
+R(T2,x2)
+W(T2,x2,10)
+end(T1)
+end(T2)
+
+// Test 12
+// both commit
+begin(T1)
+begin(T2)
+R(T1,x2)
+R(T2,x2)
+end(T1)
+W(T2,x2,10)
+end(T2)
+
+// Test 13
+// T1 and T2 wait but eventually commit
+begin(T1)
+begin(T2)
+begin(T3)
+W(T3,x2,10)
+W(T2,x2,10)
+W(T1,x2,10)
+end(T3)
+end(T2)
+end(T1)
+
+// Test 14
+// They wait in different orders from in the above test, but they all commit
+begin(T1)
+begin(T2)
+begin(T3)
+W(T3,x2,10)
+W(T1,x2,10)
+W(T2,x2,10)
+end(T3)
+end(T1)
+end(T2)
+
+
+
+// Test 15
+
+// T1 will abort because x4 is on site 2 and  so 
+// site 2 will lose its locks in the fail event.
+// So T1 will abort. T2 will be fine as will the others.
+
+begin(T5)
+begin(T4)
+begin(T3)
+begin(T2)
+begin(T1)
+W(T1,x4, 5)
+fail(2)
+W(T2,x4,44)
+recover(2)
+W(T3,x4,55)
+W(T4,x4,66)
+W(T5,x4,77)
+end(T1)
+end(T2)
+end(T3)
+end(T4)
+end(T5)
+
+// Test 16
+// T3 must wait till the commit of T2 before it reads x4
+// (because of locking), so sees 44.
+// T1 reads x2=22 at site1
+
+begin(T3)
+begin(T1)
+begin(T2)
+W(T3,x2,22)
+W(T2,x4,44)
+R(T3,x4)
+end(T2)
+end(T3)
+R(T1,x2)
+end(T1)
+
+
+// Test 17
+// T3 must wait till the commit of T2 before it reads x4
+// (because of locking), so sees 44.
+// T3 must abort though because the lock information is lost on site 4 
+// upon failure
+// T1 reads the initial value of x2 because T3 has aborted.
+
+begin(T3)
+begin(T1)
+begin(T2)
+W(T3,x2,22)
+W(T2,x3,44)
+R(T3,x3)
+end(T2)
+fail(4)
+end(T3)
+R(T1,x2)
+end(T1)
+
+// Test 18
+// A circular deadlock scenario
+// T5 as the youngest will abort, allowing T4 to complete, then T3, T2, and T1.
+// Only T5s write will not succeed. All others will succeed
+
+begin(T1)
+begin(T2)
+begin(T3)
+begin(T4)
+begin(T5)
+R(T3,x3)
+R(T4,x4)
+R(T5,x5)
+R(T1,x1)
+R(T2,x2)
+W(T1,x2,10)
+W(T2,x3,20)
+W(T3,x4,30)
+W(T4,x5,40)
+W(T5,x1,50)
+end(T4)
+end(T3)
+end(T2)
+end(T1)
+
+
+// Test 19
+// An almost circular deadlock scenario with failures.
+// T3 fails (T2 and T4 do not fail because the site is up when they execute)
+// because site 4 fails.
+// All others succeed.
+
+begin(T1)
+begin(T2)
+begin(T3)
+begin(T4)
+begin(T5)
+R(T3,x3)
+fail(4)
+recover(4)
+R(T4,x4)
+R(T5,x5)
+R(T1,x6)
+R(T2,x2)
+W(T1,x2,10)
+W(T2,x3,20)
+W(T3,x4,30)
+W(T5,x1,50)
+end(T5)
+W(T4,x5,40)
+end(T4)
+end(T3)
+end(T2)
+end(T1)
+
+// Test 20
+// From a student in 2017
+
+begin(T1)
+begin(T2)
+W(T1,x2,9)
+fail(1) // T1 abort
+end(T1)
+begin(T3)
+W(T3,x2,100)
+end(T3)
+recover(1)
+fail(2)
+fail(3)
+fail(4)
+fail(5)
+fail(6)
+fail(7)
+fail(8)
+fail(9)
+fail(10)
+R(T2,x2) // T2 can't read x2 from site 1, 
+// but doesn't hold a lock on x2 at site 1
+begin(T5)
+W(T5,x2,90) // T5 doesn't need to wait because T2 doesn't acquire a lock
+// since site 1 can't respond to the read.
+
+// Test 21
+// From a student in 2017
+// T2 will try to promote its read lock to a write lock but can't
+// So there is a deadlock. T2 is younger so will abort.
+
+begin(T1)
+begin(T2)
+R(T2, x2)
+W(T1, x2, 202)
+W(T2 x2, 302)
+end(T1)
+dump()
+

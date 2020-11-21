@@ -3,7 +3,7 @@ from utils.driver import run
 
 
 if __name__ == "__main__":
-    loader = FileLoader("./TestFiles/test.txt")
+    loader = FileLoader("tests/test21.txt")
 
     case_id = 1
     while loader.has_next():
