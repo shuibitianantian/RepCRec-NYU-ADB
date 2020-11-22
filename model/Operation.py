@@ -126,17 +126,21 @@ class Read(Operation):
             # that value, but this break the definition of multi-version read consistency, so we abort the readonly
             # transaction.
             else:
+                has = False
                 for site in tm.sites:
-                    if not site.up:
-                        continue
-                    elif var_id in site.snapshots[trans_start_tick] and var_id in site.snapshots[trans_start_tick]:
+                    # if the site has the variable is down, has -> True, we could retry latter
+                    if not site.up and trans_start_tick in site.snapshots and var_id in site.snapshots[trans_start_tick]:
+                        has = True
+                    elif trans_start_tick in site.snapshots and var_id in site.snapshots[trans_start_tick]:
                         headers = ["Transaction", "Site", var_id_str]
                         # Only one row here
                         rows = [[trans_id, f"{site.site_id}", f"{site.get_snapshot_variable(trans_start_tick, var_id)}"]]
                         print_result(headers, rows)
                         return True
-                tm.abort(trans_id, 3)
-                return True
+                # No site has the variable in the snapshot
+                if not has:
+                    tm.abort(trans_id, 3)
+                    return True
         # Case 2: typical transaction and the index of variable read is odd, then we just need to check specific site
         elif var_id % 2 != 0:
             site = tm.get_site(var_id % number_of_sites + 1)

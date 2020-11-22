@@ -31,7 +31,7 @@ if __name__ == "__main__":
 
     elif args.mode == "d":
         files = os.listdir(input_src)
-        # try to make output directory
+
         try:
             os.mkdir(output_src)
         except Exception as e:
@@ -42,6 +42,7 @@ if __name__ == "__main__":
                 input_file_name = os.path.join(input_src, file_name)
                 output_file_name = os.path.join(output_src, file_name)
                 run_file(input_file_name, output_file_name)
+
     elif args.mode == "i":
         run_interactive()
 

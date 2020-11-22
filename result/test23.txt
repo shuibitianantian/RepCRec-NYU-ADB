@@ -1,17 +1,2 @@
 Test 1 Result
-+-------------+------+----+
-| Transaction | Site | x3 |
-+-------------+------+----+
-|      T3     |  4   | 30 |
-+-------------+------+----+
-+-------------+------+----+
-| Transaction | Site | x3 |
-+-------------+------+----+
-|      T3     |  4   | 30 |
-+-------------+------+----+
-+-------------+------+----+
-| Transaction | Site | x3 |
-+-------------+------+----+
-|      T3     |  4   | 30 |
-+-------------+------+----+
-Transaction T3 commit
+Transaction T3 aborted (read-only, no version available of the variable to read)

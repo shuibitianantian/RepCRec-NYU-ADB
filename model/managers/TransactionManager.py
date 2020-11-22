@@ -83,7 +83,7 @@ class TransactionManager(object):
         elif abort_type == 2:
             print(f"Transaction {transaction_id} aborted (deadlock)")
         elif abort_type == 3:
-            print(f"Tranaction {transaction_id} aborted (read-only, no version available for read variable)")
+            print(f"Transaction {transaction_id} aborted (read-only, no version available of the variable to read)")
         else:
             raise ValueError(f"Unknown abort type: {abort_type}")
 
