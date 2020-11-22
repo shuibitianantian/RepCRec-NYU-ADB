@@ -27,29 +27,21 @@ class DataManager(object):
         # self.log is a key-value pair, each pair contains the transaction id and its change
         self.log = {}
 
-    # def echo(self):
-    #     """
-    #     return a list of variable values
-    #     :return: all variable values to prettyTable (which will be printed in dump operation)
-    #     """
-    #     prefix = f"Site {self.site_id}"
-    #     return [prefix] + [v for v in self.data]
-
     def clear_uncommitted_changes(self):
         self.log = {}
 
     def commit(self, transaction_id):
         """
         Commit changes and clear log.
-        Note: Currently this function is not used, the logic is coded in End operation
+        Note: Currently this function is not used, the commit logic is coded in End operation
         :return: None
         """
         self.data.update(self.log[transaction_id])
         self.log[transaction_id] = {}
 
-    # Change accessible flag after recover, which means the variable only hosted by current site can be write and read
-    # any other variable can be write but can not be read before any commit, remember to change the flag when any write
-    # operation is committed in this site after recovery
+    # Change accessible flag after recover, which means the non replicated variables can be write and read
+    # any other variable can be write but can not be read before any write operation commit on it,
+    # remember to change the flag when any write operation is committed in this site after recovery
     def disable_accessibility(self):
         """
         Change all read accessible flag of non replicated variable to False
@@ -76,4 +68,9 @@ class DataManager(object):
         self.data[idx - 1] = val
     
     def check_accessibility(self, idx):
+        """
+        Check if the variable can be accessed in this site
+        :param idx:
+        :return:
+        """
         return self.is_accessible[idx - 1]

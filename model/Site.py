@@ -1,6 +1,5 @@
 from model.managers.DataManager import DataManager
 from model.managers.LockManager import LockManager
-from configurations import *
 from copy import deepcopy
 
 
@@ -23,6 +22,8 @@ class Site(object):
         self.up = False
         self.data_manager.clear_uncommitted_changes()
         self.lock_manager.clear()
+        self.data_manager.disable_accessibility()
+        # self.snapshots = {}
 
     def echo(self):
         """
@@ -38,7 +39,6 @@ class Site(object):
         :return: None
         """
         self.up = True
-        self.data_manager.disable_accessibility()
 
     def snapshot(self, tick):
         """
@@ -46,7 +46,12 @@ class Site(object):
         :param tick: time
         :return: None
         """
-        self.snapshots[tick] = deepcopy(self.data_manager.data)
+        available_data = {}
+        for idx, d in enumerate(self.data_manager.data):
+            if d and self.data_manager.is_accessible[idx]:
+                available_data[idx + 1] = d
+
+        self.snapshots[tick] = deepcopy(available_data)
 
     def get_snapshot_variable(self, tick, var_id):
         """
@@ -55,4 +60,4 @@ class Site(object):
         :param var_id: variable id
         :return: variable value
         """
-        return self.snapshots[tick][var_id - 1]
+        return self.snapshots[tick][var_id]

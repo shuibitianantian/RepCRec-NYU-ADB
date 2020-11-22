@@ -29,5 +29,12 @@ def run(case):
         tm.step(operation, tick)
 
     while tm.blocked:
+        cur_blocked_size = len(tm.blocked)
         tick += 1
         tm.retry(tick)
+
+        if cur_blocked_size == len(tm.blocked):
+            print("Following operation can not be executed, maybe the test case is not terminable:")
+            for op in tm.blocked:
+                print(op)
+            break

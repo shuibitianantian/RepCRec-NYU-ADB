@@ -9,15 +9,25 @@ class TransactionManager(object):
         # store all blocked transaction and its operations
         self.blocked = []
 
+        # store all blocked transaction id
+        self.blocked_transactions = set()
+
         # store Site object to these
         self.sites = []
 
     def retry(self, tick):
         """
-        retry blocked operations
+        retry blocked operations, and update blocked operations and blocked transactions
         :return: None
         """
-        self.blocked = [op for op in self.blocked if not op.execute(tick, self, True)]
+        op_b = []
+        tx_b = set()
+        for op in self.blocked:
+            if not op.execute(tick, self, True):
+                op_b.append(op)
+                tx_b.add(op.get_parameters()[0])
+        self.blocked = op_b
+        self.blocked_transactions = tx_b
 
     def _distribute_operation(self, operation, tick):
         succeed = operation.execute(tick, self)
@@ -28,12 +38,12 @@ class TransactionManager(object):
         # 2 Steps:
         #   First, retry blocked transactions ans distribute it if possible
         #   Second, distribute the new operation
-        if self.wait_for_graph.check_deadlock():
-            t = self.get_youngest_transaction(self.wait_for_graph.get_trace())[0]
-            self.abort(t, 2)
-
         self.retry(tick)
         self._distribute_operation(operation, tick)
+
+        if operation.get_op_t() in {"R", "W"} and self.wait_for_graph.check_deadlock():
+            t = self.get_youngest_transaction(self.wait_for_graph.get_trace())[0]
+            self.abort(t, 2)
 
     def attach_sites(self, sites):
         self.sites = sites
@@ -72,6 +82,8 @@ class TransactionManager(object):
             print(f"Transaction {transaction_id} aborted (site failure)")
         elif abort_type == 2:
             print(f"Transaction {transaction_id} aborted (deadlock)")
+        elif abort_type == 3:
+            print(f"Tranaction {transaction_id} aborted (read-only, no version available for read variable)")
         else:
             raise ValueError(f"Unknown abort type: {abort_type}")
 

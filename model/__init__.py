@@ -2,6 +2,11 @@ from prettytable import PrettyTable
 
 
 class Operation(object):
+    """
+    This class abstract out all kinds of operation sent by user
+    The subclass including: Begin, BeginRO, Read, Write, End, Fail, Recover
+    The logic of operation is embedded in the function of "execute(tick: int, tm: TransactionManager, retry: bool)"
+    """
     def __init__(self, para: [str]):
         self.op_t = None  # operation type
         self.para = para  # parameters of the operation
@@ -10,6 +15,13 @@ class Operation(object):
         return f"{self.op_t}({','.join(self.para)})"
 
     def execute(self, tick: int, tm, retry=False):
+        """
+        Execute the operation if it is feasible
+        :param tick: time
+        :param tm: Transaction Manager
+        :param retry: whether this execution is a retry
+        :return: bool, indicate whether this execution is succeed
+        """
         pass
 
     def save_to_transaction(self, tm):
@@ -35,13 +47,14 @@ class Operation(object):
         return self.op_t
 
 
-# split variable id like "x12" to "x" and "12"
+# split variable id like "x12" to ("x" and "12")
 def parse_variable_id(variable_id):
     for idx, c in enumerate(variable_id):
         if c.isdigit():
             return variable_id[:idx], int(variable_id[idx:])
 
 
+# Print the query result, only for dump operation now
 def print_result(headers, rows):
     table = PrettyTable()
     table.field_names = headers
@@ -50,9 +63,15 @@ def print_result(headers, rows):
     print(table)
 
 
-# Read variable from log if modified by transaction,
+# Read variable from log if the variable was modified by transaction,
 # otherwise read from committed data
 def do_read(trans_id, var_id, site):
+    """
+    :param trans_id:
+    :param var_id:
+    :param site:
+    :return:
+    """
     if trans_id in site.data_manager.log and var_id in site.data_manager.log[trans_id]:
         res = site.data_manager.log[trans_id][var_id]
     else:

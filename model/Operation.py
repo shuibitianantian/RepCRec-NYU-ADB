@@ -17,7 +17,7 @@ class OperationParser(object):
         :return: (operation type, parameters)
         """
         res = re.search(OperationParser.reg_pattern, line)
-        return res.group(1), res.group(2).split(",")
+        return res.group(1), [s.strip() for s in res.group(2).split(",")]
 
 
 class Begin(Operation):
@@ -28,6 +28,7 @@ class Begin(Operation):
     def execute(self, tick, tm, retry=False):
         """
         Execute an operation, for Begin, we just need to initialize a new transaction in Transaction Manager
+        :param retry:
         :param tick: time
         :param tm: Transaction Manager
         :return: None
@@ -48,6 +49,7 @@ class BeginRO(Operation):
     def execute(self, tick, tm, retry=False):
         """
         Initialize a readonly transaction in Transaction Manager
+        :param retry:
         :param tick: time
         :param tm: Transaction Manager
         :return: None
@@ -61,8 +63,11 @@ class BeginRO(Operation):
             # take snapshot for each site at current tick
             for site in tm.sites:
                 # only take snapshot when site is up
-                if site.up:
-                    site.snapshot(tick)
+
+                # All sites will take snapshot, but only the variable is accessible will be included in the
+                # snapshot which means for fail site, only non replicated data will be included
+                # for up sites all accessible variable will be included in the snapshot
+                site.snapshot(tick)
 
         return True
 
@@ -74,6 +79,7 @@ class Read(Operation):
 
     def execute(self, tick: int, tm, retry=False):
         """
+        :param retry:
         :param tick: time
         :param tm: Transaction Manager
         :return: None
@@ -87,27 +93,50 @@ class Read(Operation):
         if tm.transactions[trans_id].is_readonly:
             trans_start_tick = tm.transactions[trans_id].tick
             # Situation 1.1: if the index of variable read is odd, then we just need to check specific site
+            # we do not abort the transaction because we know this variable can only be accessed by one site,
+            # if the site is down, we just need to wait it recover and we can get the value
             if var_id % 2 != 0:
                 site = tm.get_site(var_id % number_of_sites + 1)
                 if not site.up:
                     return False
-                else:
+                elif var_id in site.snapshots[trans_start_tick] and var_id in site.snapshots[trans_start_tick]:
                     headers = ["Transaction", "Site", var_id_str]
                     # Only one row here
                     rows = [[trans_id, f"{site.site_id}", f"{site.get_snapshot_variable(trans_start_tick, var_id)}"]]
                     print_result(headers, rows)
                     return True
-            # Situation 1.2: if the index of variable read is even, we just check the first available site to read
+
+            # Situation 1.2: if the index of variable read is even, we check the first available site to read
+            # if we can not access the variable from all up sites, abort the read-only transaction,
+            # by the definition:
+            #       If xi is replicated then RO can read xi from site s if xi was committed
+            #       at s before RO began and s was up all the time between the time when
+            #       xi was commited and RO began.
+            # This indicates we can not read any value (if the value had not been changed and committed by a transaction
+            # after the site recovered) from a site fail and recover before the RO transaction began, any value had been
+            # changed and committed by a transaction will be accessible, the logic is coded in site.snapshot and
+            # site.fail.
+            # Note: if we could not access the replicated value from all up sites, then we abort the transaction,
+            # because even the site with the latest committed value recover later than RO began,
+            # by definition above and how we read data:
+            #           (Upon recovery of a site s, all non-replicated variables are available for reads and
+            #            writes. Regarding replicated variables, the site makes them available for writing,
+            #            but not reading.)
+            # We could know, the value in the site is not readable unless some transaction changed it and committed
+            # that value, but this break the definition of multi-version read consistency, so we abort the readonly
+            # transaction.
             else:
                 for site in tm.sites:
                     if not site.up:
                         continue
-                    else:
+                    elif var_id in site.snapshots[trans_start_tick] and var_id in site.snapshots[trans_start_tick]:
                         headers = ["Transaction", "Site", var_id_str]
                         # Only one row here
                         rows = [[trans_id, f"{site.site_id}", f"{site.get_snapshot_variable(trans_start_tick, var_id)}"]]
                         print_result(headers, rows)
                         return True
+                tm.abort(trans_id, 3)
+                return True
         # Case 2: typical transaction and the index of variable read is odd, then we just need to check specific site
         elif var_id % 2 != 0:
             site = tm.get_site(var_id % number_of_sites + 1)
@@ -119,7 +148,6 @@ class Read(Operation):
                 else:
                     return False
         # Case 3: typical transaction and the index of variable read is even,
-        # we just check the first available site to read
         else:
             for site in tm.sites:
                 if not site.up:
@@ -137,6 +165,7 @@ class Write(Operation):
 
     def execute(self, tick: int, tm, retry=False):
         """
+        :param retry:
         :param tick: time
         :param tm: Transaction Manager
         :return: None
@@ -144,7 +173,7 @@ class Write(Operation):
         if not retry:
             self.save_to_transaction(tm)
 
-        trans_id, var_id_str, write_value = self.para[0], self.para[1], self.para[2]
+        trans_id, var_id_str, write_value = self.para[0], self.para[1], int(self.para[2])
         _, var_id = parse_variable_id(var_id_str)
 
         # Case 1: variable id is odd,
@@ -202,6 +231,8 @@ class Dump(Operation):
     def execute(self, tick: int, tm, retry=False):
         """
         Print out all variables of each site
+        :param retry: indicate this is a retry operation,
+                      even though Dump would not be retried, we add this parameter for consistency
         :param tick: time
         :param tm: Transaction Manager
         :return: None
@@ -219,6 +250,7 @@ class Fail(Operation):
     def execute(self, tick: int, tm, retry=False):
         """
         Convert specific site to fail
+        :param retry:
         :param tick: time
         :param tm:
         :return:
@@ -242,6 +274,7 @@ class Recover(Operation):
     def execute(self, tick: int, tm, retry=False):
         """
         Convert specific site to up
+        :param retry:
         :param tick: time
         :param tm: Transaction Manager
         :return: None
@@ -258,11 +291,13 @@ class End(Operation):
 
     def execute(self, tick: int, tm, retry=False):
         """
+        :param retry:
         :param tick: time
         :param tm: Transaction Manager
         :return: None
         """
-        self.save_to_transaction(tm)
+        if not retry:
+            self.save_to_transaction(tm)
 
         # If a transaction T accesses an item (really accesses it, not just request
         # a lock) at a site and the site then fails, then T should continue to execute
@@ -274,6 +309,12 @@ class End(Operation):
 
         # commit all changes made by given transaction
         trans_id = self.para[0]
+        trans_start_time = tm.transactions[trans_id].tick
+
+        # If there are blocked operation of the commit transaction, block the commit
+        if trans_id in tm.blocked_transactions:
+            return False
+
         print(f"Transaction {trans_id} commit")
 
         for site in tm.sites:
@@ -285,6 +326,9 @@ class End(Operation):
                     site.data_manager.is_accessible[var_id - 1] = True
                 # delete the change, because commit
                 site.data_manager.log.pop(trans_id)
+            # when readonly transaction end, delete the snapshot belongs to it
+            elif site.up and trans_start_time in site.snapshots:
+                site.snapshots.pop(trans_start_time)
 
             site.lock_manager.release_transaction_locks(trans_id)
 

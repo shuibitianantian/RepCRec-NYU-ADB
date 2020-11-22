@@ -1,21 +1,32 @@
-from model.Operation import *
-
 
 class WaitFor(object):
     """
-    TODO: implement WaitFor algorithm
+    Implementation of wait for graph
     """
     def __init__(self, tm):
-        self.var_to_ops = {}
         self.tm = tm
+        # Key-Value pair, tracking the operations that access each variable, (variable id: set of operation)
+        # if a variable id does not exist, then no transaction access this variable
+        self.var_to_ops = {}
+
+        # key value pair, tracking the wait-for-edges, (trans_id: set of transaction)
         self.wait_for = {}
+
+        # a list to track the circle in current execution,
+        # will be used to find the youngest transaction in the circle
         self.trace = []
 
     def add_operation(self, operation):
+        """
+        Add operation to self.var_to_ops
+        Add new transaction node in wait-for graph
+        :param operation:
+        :return: None
+        """
         op_t = operation.get_op_t()
         para = operation.get_parameters()
 
-        # Only process read and write operations
+        # Only add read and write operations
         if not (op_t == "R" or op_t == "W"):
             return
 
@@ -28,13 +39,20 @@ class WaitFor(object):
         # Get all operations on the variable
         ops = self.var_to_ops.get(var_id, set())
 
+        # Case 1: operation is R
         if op_t == "R":
+            # for any operation which is on the same variable,
+            # if op is W and transaction id is different, then there should be a edge
+            # For example, op is W(T1, x1, 10), the operation to be added is R(T2, x1)
+            # then the edge is T2 -> T1
             for op in ops:
                 if op.get_op_t() == "W" and op.get_parameters()[0] != trans_id:
                     waits = self.wait_for.get(trans_id, set())
                     waits.add(op.get_parameters()[0])
                     self.wait_for[trans_id] = waits
+        # Case 2: operation is W
         else:
+            # W operation will conflict with all other operation on the same variable
             for op in ops:
                 if op.get_parameters()[0] != trans_id:
                     waits = self.wait_for.get(trans_id, set())
@@ -67,6 +85,10 @@ class WaitFor(object):
         return False
 
     def check_deadlock(self):
+        """
+        Detect if there is a circle in current execution
+        :return: if there is a deadlock
+        """
         nodes = list(self.wait_for.keys())
         self.trace = []
 
@@ -77,6 +99,10 @@ class WaitFor(object):
         return False
 
     def get_trace(self):
+        """
+        Return all transaction in the circle, call this only when check_deadlock is true
+        :return: all transactions in the circle
+        """
         return self.trace
 
     def remove_transaction(self, transaction_id):
@@ -85,7 +111,7 @@ class WaitFor(object):
             ops = {op for op in ops if op.get_parameters()[0] != transaction_id}
             self.var_to_ops[var] = ops
 
-        # Modify wait for
+        # Modify wait for graph, delete the node of given transaction id
         self.wait_for.pop(transaction_id, None)
 
 
