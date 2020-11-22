@@ -1,0 +1,14 @@
+Test 1 Result
+Transaction T2 commit
++-------------+------+----+
+| Transaction | Site | x4 |
++-------------+------+----+
+|      T3     |  1   | 44 |
++-------------+------+----+
+Transaction T3 commit
++-------------+------+----+
+| Transaction | Site | x2 |
++-------------+------+----+
+|      T1     |  1   | 22 |
++-------------+------+----+
+Transaction T1 commit

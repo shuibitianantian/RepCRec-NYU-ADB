@@ -38,3 +38,42 @@ def run(case):
             for op in tm.blocked:
                 print(op)
             break
+
+
+def run_interactive():
+
+    # Initialized Transaction manager and sites
+    tm = TransactionManager()
+    tm.attach_sites(init_sites())
+    tick = 0
+
+    while True:
+        command = input("RepCRec >: ")
+        if command == "refresh":
+            tm = TransactionManager()
+            tm.attach_sites(init_sites())
+            tick = 0
+        elif command == "<END>":
+            while tm.blocked:
+                cur_blocked_size = len(tm.blocked)
+                tick += 1
+                tm.retry(tick)
+
+                if cur_blocked_size == len(tm.blocked):
+                    print("Following operation can not be executed, maybe the test case is not terminable:")
+                    for op in tm.blocked:
+                        print(op)
+                    break
+            break
+        elif command == "quit":
+            print("bye")
+            break
+        else:
+            tick += 1
+            op_t, para = OperationParser.parse(command)
+            operation = OperationCreator.create(op_t, para)
+            try:
+                tm.step(operation, tick)
+            except Exception as e:
+                print(e)
+
