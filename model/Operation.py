@@ -368,6 +368,13 @@ class OperationCreator(object):
 
     @staticmethod
     def create(op_t, para):
+        """
+        Create an operation object based on the opeartion type and its parameters
+
+        :param op_t: operation type
+        :param para: parameters of operation
+        """
+
         if op_t not in OperationCreator.types:
             raise KeyError("Unknown Operation Type")
         return OperationCreator.types[op_t](para)
