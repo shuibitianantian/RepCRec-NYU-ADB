@@ -2,9 +2,6 @@
 
 ###### A simple Replicated Concurrency Control and Recovery algorithm (RepCRec)
 
-##### TODO: 
-* More testing and save tests result in specific folder
-
 ## How to run?
 1. Make sure you have installed Python3.x  
 2. Run `pip install -r requirements.txt` to install dependencies
