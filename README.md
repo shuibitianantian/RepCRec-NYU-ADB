@@ -31,5 +31,63 @@
 >`quit` will exit program 
 
 ## Documentation
+* We used Sphinx to generate documentation according to docstrings in each file.
+* The detailed documentation is in *./docs/_build/html/index.html*
+* This part discuss the simulation logic.
+
+The core idea of our implementation is to abstract operations, all side effects are caused by the execution of the operation. So 
+what we need to do is to embed the logic in each operation's execute function. 
+
+#### Project Structure
+```
+.
+|   .gitignore
+|   configurations.py
+|   main.py
+|   README.md
+|   requirments.txt
+|
+|---algorithms
+|   |   DeadLockDetector.py
+|   |   __init__.py
+|
+|---model
+|   |   Operation.py
+|   |   Site.py
+|   |   Transaction.py
+|   |   __init__.py
+|   |
+|   |---managers
+|       |   DataManager.py
+|       |   LockManager.py
+|       |   TransactionManager.py
+|       |   __init__.py
+|
+|---utils
+|       driver.py
+|       FileLoader.py
+|       __init__.py
+```
+
+`Configuration.py`: global configuration variable, like the number of sites and unique variables in each site 
+
+`main.py`: entry point of the program
+
+`algorithms/DeadLockDetector.py`: contains the implementation of deadlock detection algorithm (Wait-For Graph)
+
+`model/Operation.py`: the definition of different operation, including __Read__, __Write__, __Begin__, __BeginRO__,
+__Dump__, __End__, __Fail__ and __Recover__.
+
+`model/Site.py`: Site object, site will has a lock manager and a data manager
+
+`model/Transaction.py`: Transaction object, holds the property of a transaction, for example, a flag to represent read-only transaction, also 
+the operations it has
+
+`model/managers/DataManager.py`: maintains the data store in the site, both log and committed values
+
+`model/managers/LockMamager.py`: maintains the lock table in the site
+
+`model/managers/TransactionManager.py`: holds all the information of the simulation, we attached all sites to it for convenience, but
+do not store data in transaction manager. In this way, we simplify the communication between sites and transaction manager.
 
 

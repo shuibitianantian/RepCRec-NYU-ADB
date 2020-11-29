@@ -2,6 +2,17 @@ from algorithms.DeadLockDetector import *
 
 
 class TransactionManager(object):
+    """
+    The transaction manager distributes operation and hold the information of the entire simulation, I would like to say
+    this is more like a central control of the whole simulation
+
+    :param self.transactions: A set to store all running transactions
+    :param self.wait_for_graph: A Wait-For object to detect deadlock
+    :param self.blocked: A list contains all blocked operations
+    :param self.blocked_transactions: A set of blocked transactions
+    :param self.sites: A list of all sites in the simulation
+    """
+
     def __init__(self):
         self.transactions = {}
         self.wait_for_graph = WaitFor(self)
@@ -17,7 +28,8 @@ class TransactionManager(object):
 
     def retry(self, tick):
         """
-        retry blocked operations, and update blocked operations and blocked transactions
+        retry blocked operations (update blocked operations and blocked transactions)
+
         :return: None
         """
         op_b = []
@@ -35,6 +47,13 @@ class TransactionManager(object):
             self.blocked.append(operation)
 
     def step(self, operation, tick):
+        """
+        Process the new operation, if this cause a deadlock, the youngest transaction will be aborted
+
+        :param operation: new oepration
+        :param tick: time
+        :return: None
+        """
         # 2 Steps:
         #   First, retry blocked transactions ans distribute it if possible
         #   Second, distribute the new operation
@@ -46,12 +65,30 @@ class TransactionManager(object):
             self.abort(t, 2)
 
     def attach_sites(self, sites):
+        """
+        Attach sites to the transaction manager
+
+        :param sites: A list of all sites
+        :return: None
+        """
         self.sites = sites
 
     def get_site(self, idx):
+        """
+        Get the site of given id
+
+        :param idx: site id
+        :return: Site
+        """
         return self.sites[idx - 1]
 
     def get_youngest_transaction(self, trace):
+        """
+        Find the youngest transaction
+
+        :param trace: The deadlock cycle
+        :return: The youngest transaction
+        """
         ages = [(t, self.transactions[t].tick) for t in trace]
         return sorted(ages, key=lambda x: -x[1])[0]
 
@@ -62,8 +99,10 @@ class TransactionManager(object):
     #   3. delete transaction in TM
     def abort(self, transaction_id, abort_type):
         """
+        Abort the transaction
+
         :param transaction_id: The transaction to be aborted
-        :param abort_type: Why does the transaction be aborted, 1 => site fail / 2 => dead lock
+        :param abort_type: Why does the transaction be aborted, 1 => site fail, 2 => dead lock, 3 => read-only no available version
         :return: None
         """
         for site in self.sites:

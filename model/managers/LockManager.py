@@ -7,11 +7,12 @@ class LockManager(object):
 
     def try_lock_variable(self, transaction_id, variable_id, lock_type):
         """
-        TODO: Testing needed, cannot guarantee no bug in current code
-        :param transaction_id:
-        :param variable_id:
-        :param lock_type:
-        :return: if lock variable succeed or not
+        Try to get some lock of a variable in current site
+
+        :param transaction_id: transaction id
+        :param variable_id: variable id
+        :param lock_type: 0 represent read lock (shared lock), 1 represent write lock (exclusive lock)
+        :return: True if get lock otherwise False
         """
         # Make sure given lock type is 0 or 1
         if lock_type != 0 and lock_type != 1:
@@ -56,10 +57,11 @@ class LockManager(object):
 
     def try_unlock_variable(self, variable_id, transaction_id):
         """
-        TODO: Testing needed, cannot guarantee no bug in current code
-        :param variable_id:
-        :param transaction_id:
-        :return: if unlock variable succeed or not
+        Try to unlock a variable
+
+        :param variable_id: variable id
+        :param transaction_id: transaction id
+        :return: None
         """
         lock = self.lock_table.get(variable_id, None)
 
@@ -83,7 +85,8 @@ class LockManager(object):
     def release_transaction_locks(self, trans_id):
         """
         Iterate lock on each variable, if the lock is set by given trans_id, release it
-        :param trans_id:
+
+        :param trans_id: Transaction id
         :return: None
         """
         to_be_delete = []
@@ -107,12 +110,18 @@ class LockManager(object):
     def clear(self):
         """
         Clear the lock table, when site fail, we should clear locks
+
         :return: None
         """
         self.lock_table = {}
 
     # Get all the transactions that have one or more locks in this site
     def get_involved_transactions(self):
+        """
+        Get the transactions has locks on this site
+
+        :return: A set of transactions
+        """
         transactions = set()
         for var_id, locks in self.lock_table.items():
             # Transaction has read lock on var_id

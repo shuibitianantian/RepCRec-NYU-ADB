@@ -1,5 +1,8 @@
 
 class FileLoader(object):
+    """
+    FileLoader is used to open test file and extract cases and operations
+    """
     def __init__(self, file_name):
         self._lines = []
 
@@ -14,6 +17,7 @@ class FileLoader(object):
     def next_case(self):
         """
         Gather all operations of next test case
+
         :return: list of operations
         """
         operations = []
@@ -29,6 +33,7 @@ class FileLoader(object):
     def has_next(self):
         """
         Check if there are remaining test cases
+
         :return: True or False
         """
         return self._buffer_idx < self._end_idx

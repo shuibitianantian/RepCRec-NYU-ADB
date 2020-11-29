@@ -13,6 +13,7 @@ class OperationParser(object):
     def parse(line):
         """
         Extract operation type and parameters out from a textual parameter
+
         :param line: A textual operation, for example "begin(T1)"
         :return: (operation type, parameters)
         """
@@ -28,10 +29,11 @@ class Begin(Operation):
     def execute(self, tick, tm, retry=False):
         """
         Execute an operation, for Begin, we just need to initialize a new transaction in Transaction Manager
-        :param retry:
+
+        :param retry: if the operation is a retry
         :param tick: time
         :param tm: Transaction Manager
-        :return: None
+        :return: True
         """
         trans = Transaction(self.para[0], tick)
         if trans.transaction_id in tm.transactions:
@@ -49,10 +51,11 @@ class BeginRO(Operation):
     def execute(self, tick, tm, retry=False):
         """
         Initialize a readonly transaction in Transaction Manager
-        :param retry:
+
+        :param retry: If the operation is a retry
         :param tick: time
         :param tm: Transaction Manager
-        :return: None
+        :return: True
         """
         trans = Transaction(self.para[0], tick, True)
 
@@ -79,10 +82,12 @@ class Read(Operation):
 
     def execute(self, tick: int, tm, retry=False):
         """
-        :param retry:
+        Execute the read operation, for both read and readonly
+
+        :param retry: If the transaction is a retry
         :param tick: time
         :param tm: Transaction Manager
-        :return: None
+        :return: True or False
         """
         if not retry:
             self.save_to_transaction(tm)
@@ -169,10 +174,12 @@ class Write(Operation):
 
     def execute(self, tick: int, tm, retry=False):
         """
-        :param retry:
+        Execute Write operation
+
+        :param retry: If the operation is a retry
         :param tick: time
         :param tm: Transaction Manager
-        :return: None
+        :return: True or False
         """
         if not retry:
             self.save_to_transaction(tm)
@@ -180,18 +187,20 @@ class Write(Operation):
         trans_id, var_id_str, write_value = self.para[0], self.para[1], int(self.para[2])
         _, var_id = parse_variable_id(var_id_str)
 
-        # Case 1: variable id is odd,
+        # Case 1: variable id is odd
         if var_id % 2 != 0:
             site = tm.get_site(var_id % number_of_sites + 1)
-
+            # Situation 1.1: Site failed, return false
             if not site.up:
                 # print(f"Site {site.site_id} is down, {self}")
                 return False
+            # Situation 1.2: Site up and lock variable succeed, return true
             elif site.lock_manager.try_lock_variable(trans_id, var_id_str, 1):
                 logs = site.data_manager.log.get(trans_id, {})
                 logs[var_id] = write_value
                 site.data_manager.log[trans_id] = logs
                 return True
+            # Situation 1.3: Site up, but lock variable failed, return false
             else:
                 # print(f"Site {site.site_id} is up, but can not get the lock, {self}")
                 return False
@@ -235,11 +244,11 @@ class Dump(Operation):
     def execute(self, tick: int, tm, retry=False):
         """
         Print out all variables of each site
-        :param retry: indicate this is a retry operation,
-                      even though Dump would not be retried, we add this parameter for consistency
+
+        :param retry: indicate this is a retry operation, even though Dump would not be retried, we add this parameter for consistency
         :param tick: time
         :param tm: Transaction Manager
-        :return: None
+        :return: True
         """
         rows = [site.echo() for site in tm.sites]
         print_result(TABLE_HEADERS, rows)
@@ -254,10 +263,11 @@ class Fail(Operation):
     def execute(self, tick: int, tm, retry=False):
         """
         Convert specific site to fail
-        :param retry:
+
+        :param retry: If the operation is a retry, Fail operation will not be retried
         :param tick: time
-        :param tm:
-        :return:
+        :param tm: Transaction Manager
+        :return: True
         """
         site_id = int(self.para[0])
         site = tm.get_site(site_id)
@@ -278,10 +288,10 @@ class Recover(Operation):
     def execute(self, tick: int, tm, retry=False):
         """
         Convert specific site to up
-        :param retry:
+        :param retry: If the operation is a retry, Recover will not be retried
         :param tick: time
         :param tm: Transaction Manager
-        :return: None
+        :return: True
         """
         site_id = int(self.para[0])
         tm.get_site(site_id).recover()
@@ -295,10 +305,12 @@ class End(Operation):
 
     def execute(self, tick: int, tm, retry=False):
         """
-        :param retry:
+        Commit change of the transaction
+
+        :param retry: If the operation is a retry
         :param tick: time
         :param tm: Transaction Manager
-        :return: None
+        :return: True
         """
         if not retry:
             self.save_to_transaction(tm)
@@ -335,6 +347,9 @@ class End(Operation):
                 site.snapshots.pop(trans_start_time)
 
             site.lock_manager.release_transaction_locks(trans_id)
+
+        # When transaction commit, we need to remove the transaction in the wait for graph
+        tm.wait_for_graph.remove_transaction(trans_id)
 
         return True
 

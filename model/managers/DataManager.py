@@ -2,10 +2,14 @@ from configurations import distinct_variable_counts, number_of_sites
 
 
 class DataManager(object):
+    """
+    A class to initialize and manage data
+    """
     @staticmethod
     def _init_db(idx):
         """
         Initialize data based on the site id
+
         :param idx: site id
         :return: list of value of variable
         """
@@ -28,23 +32,30 @@ class DataManager(object):
         self.log = {}
 
     def clear_uncommitted_changes(self):
+        """
+        Reset log to empty because of site fail
+
+        :return: None
+        """
         self.log = {}
 
     def commit(self, transaction_id):
         """
-        Commit changes and clear log.
+        Commit changes and clear log belongs to that transaction.
+
         Note: Currently this function is not used, the commit logic is coded in End operation
+
         :return: None
         """
         self.data.update(self.log[transaction_id])
         self.log[transaction_id] = {}
 
-    # Change accessible flag after recover, which means the non replicated variables can be write and read
-    # any other variable can be write but can not be read before any write operation commit on it,
-    # remember to change the flag when any write operation is committed in this site after recovery
     def disable_accessibility(self):
         """
-        Change all read accessible flag of non replicated variable to False
+        Change accessible flag to False after recover (Only for replicated variable), which means the non replicated
+        variables can be write and read any other variable can be write but can not be read before any write operation
+        commit on it
+
         :return: None
         """
         for i in range(1, distinct_variable_counts + 1):
@@ -62,15 +73,29 @@ class DataManager(object):
         self.log.pop(transaction_id, None)
 
     def get_variable(self, idx):
+        """
+        Read the value of given variable
+
+        :param idx: variable id
+        :return: value of the variable
+        """
         return self.data[idx - 1]
 
     def set_variable(self, idx, val):
+        """
+        Write value to the variable
+
+        :param idx: variable id
+        :param val: variable value
+        :return: None
+        """
         self.data[idx - 1] = val
     
     def check_accessibility(self, idx):
         """
         Check if the variable can be accessed in this site
-        :param idx:
-        :return:
+
+        :param idx: variable id
+        :return: True or False
         """
         return self.is_accessible[idx - 1]

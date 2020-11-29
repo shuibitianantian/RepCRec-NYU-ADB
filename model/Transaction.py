@@ -1,5 +1,13 @@
 
 class Transaction(object):
+    """
+    A class to represent transaction
+
+    :param self.transaction_id: transaction id
+    :param self.is_readonly: True if the transaction is readonly otherwise False
+    :param self.to_be_aborted: Whether this transaction is going to be aborted because of site failure
+    :param self.tick: transaction start time
+    """
     def __init__(self, identifier, tick, is_readonly=False):
         self.transaction_id = identifier
         self.is_readonly = is_readonly
@@ -16,6 +24,7 @@ class Transaction(object):
     def add_operation(self, operation):
         """
         Add given operation to the transactions
+
         :param operation: an operation
         :return: None
         """

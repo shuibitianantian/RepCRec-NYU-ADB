@@ -6,6 +6,13 @@ import os
 
 
 def run_file(input_file, output_file):
+    """
+    Run testing on the case or cases from the input file and save the result in the output file
+
+    :param input_file: File path of the input case
+    :param output_file: File path of the output result
+    :return: None
+    """
     with open(output_file, "w") as f:
         sys.stdout = f
         loader = FileLoader(input_file)

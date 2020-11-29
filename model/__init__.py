@@ -3,7 +3,7 @@ from prettytable import PrettyTable
 
 class Operation(object):
     """
-    This class abstract out all kinds of operation sent by user
+    This class abstract out all kinds of operation sent by user.
     The subclass including: Begin, BeginRO, Read, Write, End, Fail, Recover
     The logic of operation is embedded in the function of "execute(tick: int, tm: TransactionManager, retry: bool)"
     """
@@ -17,6 +17,7 @@ class Operation(object):
     def execute(self, tick: int, tm, retry=False):
         """
         Execute the operation if it is feasible
+
         :param tick: time
         :param tm: Transaction Manager
         :param retry: whether this execution is a retry
@@ -47,15 +48,26 @@ class Operation(object):
         return self.op_t
 
 
-# split variable id like "x12" to ("x" and "12")
 def parse_variable_id(variable_id):
+    """
+    Split variable id, for example, from "x12" to ("x" and "12")
+
+    :param variable_id: variable id string
+    :return: A tuple
+    """
     for idx, c in enumerate(variable_id):
         if c.isdigit():
             return variable_id[:idx], int(variable_id[idx:])
 
 
-# Print the query result, only for dump operation now
 def print_result(headers, rows):
+    """
+    Print the query result using pretty table, only for dump operation now
+
+    :param headers: table headers
+    :param rows: table rows
+    :return: None
+    """
     table = PrettyTable()
     table.field_names = headers
     for row in rows:
@@ -67,11 +79,15 @@ def print_result(headers, rows):
 # otherwise read from committed data
 def do_read(trans_id, var_id, site):
     """
-    :param trans_id:
-    :param var_id:
-    :param site:
+    Read the variable, and print in prettytable
+
+    :param trans_id: transaction id
+    :param var_id: variable id
+    :param site: site
     :return:
     """
+
+    # Case 1: data has been changed by the same transaction but not commit before
     if trans_id in site.data_manager.log and var_id in site.data_manager.log[trans_id]:
         res = site.data_manager.log[trans_id][var_id]
     else:

@@ -1,8 +1,14 @@
 
 class WaitFor(object):
     """
-    Implementation of wait for graph
+    A simple implementation of wait-for graph for deadlock detection
+
+    :param self.tm: TransactionManager
+    :param self.var_to_ops: A dictionary mapping variable id to a set of operations which want to access the variable
+    :param self.wait_for: A dictionary tracking the wait-for edges, key is the from point, value is a set of transactions
+    :param self.trace: A list contains a cycle in the wait-for graph if any circle exists
     """
+
     def __init__(self, tm):
         self.tm = tm
         # Key-Value pair, tracking the operations that access each variable, (variable id: set of operation)
@@ -18,9 +24,14 @@ class WaitFor(object):
 
     def add_operation(self, operation):
         """
-        Add operation to self.var_to_ops
-        Add new transaction node in wait-for graph
-        :param operation:
+        Add operation to self.var_to_ops dictionary, for example, if the operation want to access x1,
+        we add the operation in this way self.var_to_ops["x1"].add(operation)
+
+        Add new node in wait-for graph if the transactions does not exist
+
+        ReadOnly operation will be ignored
+
+        :param operation: Operation object
         :return: None
         """
         op_t = operation.get_op_t()
@@ -87,7 +98,8 @@ class WaitFor(object):
     def check_deadlock(self):
         """
         Detect if there is a circle in current execution
-        :return: if there is a deadlock
+
+        :return: True if there is a deadlock, otherwise False
         """
         nodes = list(self.wait_for.keys())
         self.trace = []
@@ -100,12 +112,23 @@ class WaitFor(object):
 
     def get_trace(self):
         """
-        Return all transaction in the circle, call this only when check_deadlock is true
-        :return: all transactions in the circle
+        Return all transaction in a deadlock circle
+
+        Note: This function will return a empty list if self.check_deadlock() == True
+
+        :return: A list of transaction
         """
         return self.trace
 
     def remove_transaction(self, transaction_id):
+        """
+        Remove wait-for node has the transaction_id, remove all operations belong to the transaction
+
+        Typically, this function will be called when a transaction has been aborted or has committed
+
+        :param transaction_id: identifier of the transaction
+        :return: None
+        """
         # Modify var_to_trans
         for var, ops in self.var_to_ops.items():
             ops = {op for op in ops if op.get_parameters()[0] != transaction_id}

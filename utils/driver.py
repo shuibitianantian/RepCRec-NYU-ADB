@@ -7,6 +7,7 @@ from model.Operation import OperationParser, OperationCreator
 def init_sites():
     """
     Initialize sites and return list of sites
+
     :return: list of sites
     """
     return [Site(idx) for idx in range(1, number_of_sites + 1)]
@@ -14,7 +15,8 @@ def init_sites():
 
 def run(case):
     """
-    run RepCRec algorithm on a list of operations (single test case)
+    Run RepCRec algorithm on a list of operations (single test case), the result will be saved in the stdout
+
     :param case: a list of operations
     :return: None
     """
@@ -41,7 +43,11 @@ def run(case):
 
 
 def run_interactive():
+    """
+    Run the interactive mode which allows user to enter operations line by line
 
+    :return: None
+    """
     # Initialized Transaction manager and sites
     tm = TransactionManager()
     tm.attach_sites(init_sites())
