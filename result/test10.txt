@@ -12,3 +12,17 @@ Transaction T3 commit
 |      T1     |  1   | 22 |
 +-------------+------+----+
 Transaction T1 commit
++--------------+------+----+------+----+------+----+------+----+------+-----+------+-----+------+-----+------+-----+------+-----+------+-----+
+|  Site Name   |  x1  | x2 |  x3  | x4 |  x5  | x6 |  x7  | x8 |  x9  | x10 | x11  | x12 | x13  | x14 | x15  | x16 | x17  | x18 | x19  | x20 |
++--------------+------+----+------+----+------+----+------+----+------+-----+------+-----+------+-----+------+-----+------+-----+------+-----+
+| Site 1 (up)  | None | 22 | None | 44 | None | 60 | None | 80 | None | 100 | None | 120 | None | 140 | None | 160 | None | 180 | None | 200 |
+| Site 2 (up)  |  10  | 22 | None | 44 | None | 60 | None | 80 | None | 100 | 110  | 120 | None | 140 | None | 160 | None | 180 | None | 200 |
+| Site 3 (up)  | None | 22 | None | 44 | None | 60 | None | 80 | None | 100 | None | 120 | None | 140 | None | 160 | None | 180 | None | 200 |
+| Site 4 (up)  | None | 22 |  30  | 44 | None | 60 | None | 80 | None | 100 | None | 120 | 130  | 140 | None | 160 | None | 180 | None | 200 |
+| Site 5 (up)  | None | 22 | None | 44 | None | 60 | None | 80 | None | 100 | None | 120 | None | 140 | None | 160 | None | 180 | None | 200 |
+| Site 6 (up)  | None | 22 | None | 44 |  50  | 60 | None | 80 | None | 100 | None | 120 | None | 140 | 150  | 160 | None | 180 | None | 200 |
+| Site 7 (up)  | None | 22 | None | 44 | None | 60 | None | 80 | None | 100 | None | 120 | None | 140 | None | 160 | None | 180 | None | 200 |
+| Site 8 (up)  | None | 22 | None | 44 | None | 60 |  70  | 80 | None | 100 | None | 120 | None | 140 | None | 160 | 170  | 180 | None | 200 |
+| Site 9 (up)  | None | 22 | None | 44 | None | 60 | None | 80 | None | 100 | None | 120 | None | 140 | None | 160 | None | 180 | None | 200 |
+| Site 10 (up) | None | 22 | None | 44 | None | 60 | None | 80 |  90  | 100 | None | 120 | None | 140 | None | 160 | None | 180 | 190  | 200 |
++--------------+------+----+------+----+------+----+------+----+------+-----+------+-----+------+-----+------+-----+------+-----+------+-----+

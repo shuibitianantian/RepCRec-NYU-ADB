@@ -63,6 +63,15 @@ class WaitFor(object):
                     self.wait_for[trans_id] = waits
         # Case 2: operation is W
         else:
+            # Check if previous operation of the same transaction operated on the same variable
+            # if so, no deadlock will be formed by adding this operation
+            for op in ops:
+                if op.get_parameters()[0] == trans_id and op.get_op_t() == "W":
+                    # Add operation to the dictionary
+                    ops.add(operation)
+                    self.var_to_ops[var_id] = ops
+                    return
+
             # W operation will conflict with all other operation on the same variable
             for op in ops:
                 if op.get_parameters()[0] != trans_id:

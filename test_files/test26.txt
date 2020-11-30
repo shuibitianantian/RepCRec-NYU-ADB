@@ -1,0 +1,9 @@
+begin(T1)
+begin(T2)
+W(T1, x1, 11)
+W(T2, x1, 22)
+W(T1, x1, 33)
+end(T1)
+end(T2)
+dump()
+
