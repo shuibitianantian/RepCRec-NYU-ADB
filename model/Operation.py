@@ -329,7 +329,6 @@ class End(Operation):
 
         # If there are blocked operation of the commit transaction, block the commit
         if trans_id in tm.blocked_transactions:
-            print(trans_id)
             return False
 
         print(f"Transaction {trans_id} commit")
