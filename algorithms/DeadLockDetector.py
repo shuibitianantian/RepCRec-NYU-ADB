@@ -52,6 +52,15 @@ class WaitFor(object):
 
         # Case 1: operation is R
         if op_t == "R":
+            # Check if previous operation of the same transaction operated on the same variable
+            # if so, no deadlock will be formed by adding this operation
+            for op in ops:
+                if op.get_parameters()[0] == trans_id:
+                    # Add operation to the dictionary
+                    ops.add(operation)
+                    self.var_to_ops[var_id] = ops
+                    return
+
             # for any operation which is on the same variable,
             # if op is W and transaction id is different, then there should be a edge
             # For example, op is W(T1, x1, 10), the operation to be added is R(T2, x1)

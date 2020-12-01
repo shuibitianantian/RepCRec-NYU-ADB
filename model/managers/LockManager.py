@@ -34,7 +34,8 @@ class LockManager(object):
         # Case 2: some locks on given variable
         else:
             # Situation 1: shared lock, no exclusive lock exists, add the transaction_id in the shared lock list
-            if lock_type == 0 and self.lock_table[variable_id][1] is None:
+            if lock_type == 0 and (self.lock_table[variable_id][1] is None or
+                                   self.lock_table[variable_id][1] == transaction_id):
                 self.lock_table[variable_id][0].add(transaction_id)
                 return True
 

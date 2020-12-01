@@ -37,7 +37,12 @@ class TransactionManager(object):
         for op in self.blocked:
             if not op.execute(tick, self, True):
                 op_b.append(op)
+
+                if op.get_op_t() == "end" and op.get_parameters()[0] not in tx_b:
+                    continue
+
                 tx_b.add(op.get_parameters()[0])
+
         self.blocked = op_b
         self.blocked_transactions = tx_b
 
