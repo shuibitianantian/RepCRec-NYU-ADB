@@ -1,3 +1,4 @@
+// T1 write site 1, T2 read site 1. All commits.
 begin(T1)
 fail(2)
 fail(3)

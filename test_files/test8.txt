@@ -1,3 +1,5 @@
+// T2 still reads the initial value of x3
+// T3 still reads the value of x3 written by T1
 begin(T1)
 beginRO(T2)
 R(T2,x1)

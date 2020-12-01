@@ -1,3 +1,6 @@
+// T1 will abort because x4 is on site 2 and  so 
+// site 2 will lose its locks in the fail event.
+// So T1 will abort. T2 will be fine as will the others.
 begin(T5)
 begin(T4)
 begin(T3)

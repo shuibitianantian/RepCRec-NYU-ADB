@@ -1,3 +1,4 @@
+// T1 fails again here because it wrote to a site that failed. T2 ok.
 begin(T1)
 begin(T2)
 W(T1,x6,66)

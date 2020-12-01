@@ -1,3 +1,4 @@
+// T1, T2, T3 ok. T3 waits and then comlete after T2 commits 
 begin(T3)
 begin(T1)
 begin(T2)

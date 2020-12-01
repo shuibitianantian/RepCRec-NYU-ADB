@@ -5,18 +5,13 @@ Transaction T1 commit
 +-------------+------+-----+
 |      T2     |  1   | 121 |
 +-------------+------+-----+
-+-------------+------+--------+
-| Transaction | Site |   x4   |
-+-------------+------+--------+
-|      T2     |  1   | 232323 |
-+-------------+------+--------+
-Transaction T2 commit
 Transaction T3 commit
+Transaction T2 aborted (site failure)
 +----------------+------+----+------+-------+------+----+------+----+------+-----+------+-----+------+-----+------+-----+------+-----+------+-----+
 |   Site Name    |  x1  | x2 |  x3  |   x4  |  x5  | x6 |  x7  | x8 |  x9  | x10 | x11  | x12 | x13  | x14 | x15  | x16 | x17  | x18 | x19  | x20 |
 +----------------+------+----+------+-------+------+----+------+----+------+-----+------+-----+------+-----+------+-----+------+-----+------+-----+
-|  Site 1 (up)   | None | 20 | None | 15151 | None | 60 | None | 80 | None | 100 | None | 120 | None | 140 | None | 160 | None | 180 | None | 200 |
-| Site 2 (down)  |  10  | 20 | None |  121  | None | 60 | None | 80 | None | 100 | 110  | 120 | None | 140 | None | 160 | None | 180 | None | 200 |
+| Site 1 (down)  | None | 20 | None |  121  | None | 60 | None | 80 | None | 100 | None | 120 | None | 140 | None | 160 | None | 180 | None | 200 |
+|  Site 2 (up)   |  10  | 20 | None | 15151 | None | 60 | None | 80 | None | 100 | 110  | 120 | None | 140 | None | 160 | None | 180 | None | 200 |
 | Site 3 (down)  | None | 20 | None |  121  | None | 60 | None | 80 | None | 100 | None | 120 | None | 140 | None | 160 | None | 180 | None | 200 |
 | Site 4 (down)  | None | 20 |  30  |  121  | None | 60 | None | 80 | None | 100 | None | 120 | 130  | 140 | None | 160 | None | 180 | None | 200 |
 |  Site 5 (up)   | None | 20 | None | 15151 | None | 60 | None | 80 | None | 100 | None | 120 | None | 140 | None | 160 | None | 180 | None | 200 |

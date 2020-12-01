@@ -1,3 +1,5 @@
+// T2 should read the initial version of x3 based on multiversion read
+// consistency.
 begin(T1)
 beginRO(T2)
 R(T2,x1)

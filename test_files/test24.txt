@@ -1,3 +1,4 @@
+// T1 abort because site fail. T2 will read the initial value of x3 = 30, x2 = 20.
 begin(T1)
 W(T1, x3, 100)
 beginRO(T2)

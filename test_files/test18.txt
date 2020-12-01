@@ -1,3 +1,6 @@
+// A circular deadlock scenario
+// T5 as the youngest will abort, allowing T4 to complete, then T3, T2, and T1.
+// Only T5s write will not succeed. All others will succeed
 begin(T1)
 begin(T2)
 begin(T3)

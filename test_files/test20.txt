@@ -1,7 +1,9 @@
+// This is not terminable unless we add end(T5).
+// T1 abort
 begin(T1)
 begin(T2)
 W(T1,x2,9)
-fail(1) // T1 abort
+fail(1) 
 end(T1)
 begin(T3)
 W(T3,x2,100)

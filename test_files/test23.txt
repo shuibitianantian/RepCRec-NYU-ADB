@@ -1,3 +1,4 @@
+// T3 will read x3 after recover(4), but will abort because x4 is not readable in all sites.
 fail(1)
 fail(2)
 fail(3)

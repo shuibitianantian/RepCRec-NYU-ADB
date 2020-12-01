@@ -1,3 +1,4 @@
+// T2 will abort because no copies is avalaible for x2. T2 will read x3 because x3 is unreplicated data.
 begin(T1)
 W(T1, x3, 100)
 end(T1)

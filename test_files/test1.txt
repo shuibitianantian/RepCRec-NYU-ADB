@@ -1,3 +1,4 @@
+// T2 should abort, T1 should not, because of kill youngest
 begin(T1)
 begin(T2)
 W(T1,x1,101)

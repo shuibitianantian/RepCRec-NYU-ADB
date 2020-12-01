@@ -1,3 +1,7 @@
+// T1 should not abort because its site did not fail.
+// In fact all transactions commit
+// x8 has the value 88 at every site except site 2 where it won't have
+// the correct value right away but must wait for a write to take place.
 begin(T1)
 begin(T2)
 R(T1,x3)

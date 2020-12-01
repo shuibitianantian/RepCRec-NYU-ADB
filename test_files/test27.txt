@@ -1,3 +1,4 @@
+// Deadlock. T2 abort youngest. T1 commit. x1 = 11.
 begin(T1)
 begin(T2)
 W(T1, x1, 11)

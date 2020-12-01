@@ -1,3 +1,8 @@
+// T1 ok. T2 ok. T2 reads from a recovering site, but odd variables only
+// at that site
+// At the dump, sites 3 and 4 would have their original values for x8.
+// Future reads of x8 to those sites should be refused until a committed write
+// takes place.
 begin(T1)
 begin(T2)
 fail(3)

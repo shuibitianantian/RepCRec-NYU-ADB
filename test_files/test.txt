@@ -1,3 +1,5 @@
+// This is a terminable version of test20.txt
+// T1 abort
 begin(T1)
 begin(T2)
 W(T1,x2,9)

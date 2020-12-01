@@ -1,3 +1,4 @@
+// They wait in different orders from in the above test, but they all commit
 begin(T1)
 begin(T2)
 begin(T3)
