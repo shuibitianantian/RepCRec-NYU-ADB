@@ -348,6 +348,8 @@ class End(Operation):
 
             site.lock_manager.release_transaction_locks(trans_id)
 
+        if trans_id in tm.blocked_transactions:
+            tm.transactions.remove(trans_id)
         # When transaction commit, we need to remove the transaction in the wait for graph
         tm.wait_for_graph.remove_transaction(trans_id)
 
