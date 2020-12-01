@@ -1,1 +1,0 @@
-{"virtualbox":{"/vagrant":{"mount_options":["dmode=775,fmode=664","uid=1000","gid=1000"],"guestpath":"/vagrant","hostpath":"/Users/zhaozhi/Desktop/ADB/project/RepCRec-NYU-ADB","disabled":false,"__vagrantfile":true}}}
