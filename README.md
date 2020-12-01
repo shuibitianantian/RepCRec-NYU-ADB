@@ -87,4 +87,6 @@ the operations it has
 `model/managers/TransactionManager.py`: holds all the information of the simulation, we attached all sites to it for convenience, but
 do not store data in transaction manager. In this way, we simplify the communication between sites and transaction manager.
 
-
+### WorkFlow
+---
+![Work flow](./imgs/docs.png)
